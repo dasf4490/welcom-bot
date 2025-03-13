@@ -1,22 +1,20 @@
 import discord
 import asyncio
 import os
-import sys  # 再起動に使用
+import sys
 from discord.ext import commands
 
-# ボットのインテント設定（DM送信・メンバーイベントを有効化）
+# ボットのインテント設定
 intents = discord.Intents.default()
 intents.members = True
-
-# Botオブジェクトの生成
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 # 環境変数から設定値を取得
 TOKEN = os.getenv("DISCORD_TOKEN")  # Botトークン
 ROLE_ID = int(os.getenv("DISCORD_ROLE_ID"))  # ロールID
 WELCOME_CHANNEL_ID = int(os.getenv("DISCORD_WELCOME_CHANNEL_ID"))  # チャンネルID
-ERROR_REPORT_USER_IDS = list(map(int, os.getenv("ERROR_REPORT_USER_IDS", "").split(",")))  # エラー報告を送るユーザーID（複数対応）
-BOT_OWNER_IDS = list(map(int, os.getenv("BOT_OWNER_IDS", "").split(",")))  # ボット所有者のユーザーID（複数対応）
+ERROR_REPORT_USER_IDS = list(map(int, os.getenv("ERROR_REPORT_USER_IDS", "").split(",")))  # エラー報告を送るユーザーID
+BOT_OWNER_IDS = list(map(int, os.getenv("BOT_OWNER_IDS", "").split(",")))  # ボット所有者のユーザーID
 
 # トークンの存在確認
 if not TOKEN:
@@ -30,7 +28,7 @@ async def report_status():
     """
     1時間ごとにエラーがなかったことを指定されたユーザーにDMで送信
     """
-    await bot.wait_until_ready()  # ボットが準備完了するまで待機
+    await bot.wait_until_ready()
     while not bot.is_closed():
         try:
             for user_id in ERROR_REPORT_USER_IDS:
@@ -72,7 +70,6 @@ async def on_member_join(member):
             await asyncio.sleep(60)  # 60秒間待機
             can_send_message = True
     except Exception as e:
-        # エラー内容をDMで報告
         error_message = f"エラーが発生しました:\n{e}"
         for user_id in ERROR_REPORT_USER_IDS:
             try:
@@ -130,15 +127,13 @@ async def restart(ctx):
     await bot.close()  # ボットを停止
     sys.exit(0)  # プロセスを終了（Railwayの再起動をトリガー）
 
-# 定期タスクとしてエラーレポートを送る
-bot.loop.create_task(report_status())
-
 # 非同期的にボットを実行する
 async def main():
-    try:
-        await bot.start(TOKEN)  # 非同期起動
-    except Exception as e:
-        print(f"ボットの起動中にエラーが発生しました: {e}")
+    """
+    メイン関数で非同期にボットを起動
+    """
+    asyncio.create_task(report_status())  # 定期タスクを作成
+    await bot.start(TOKEN)  # 非同期にボットを起動
 
 if __name__ == "__main__":
     asyncio.run(main())
