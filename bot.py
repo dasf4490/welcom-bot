@@ -2,19 +2,28 @@ import discord
 import asyncio
 import os
 import sys
+from discord import app_commands
 from discord.ext import commands
 
-# ボットのインテント設定
+# インテント設定とボットの初期化
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix="/", intents=intents)
+
+class MyBot(commands.Bot):
+    async def setup_hook(self):
+        # スラッシュコマンドの同期
+        await self.tree.sync()
+        print("スラッシュコマンドが同期されました！")
+
+# Botインスタンスを作成
+bot = MyBot(command_prefix="/", intents=intents)
 
 # 環境変数から設定値を取得
 TOKEN = os.getenv("DISCORD_TOKEN")  # Botトークン
 ROLE_ID = int(os.getenv("DISCORD_ROLE_ID"))  # ロールID
 WELCOME_CHANNEL_ID = int(os.getenv("DISCORD_WELCOME_CHANNEL_ID"))  # チャンネルID
-ERROR_REPORT_USER_IDS = list(map(int, os.getenv("ERROR_REPORT_USER_IDS", "").split(",")))  # エラー報告を送るユーザーID
-BOT_OWNER_IDS = list(map(int, os.getenv("BOT_OWNER_IDS", "").split(",")))  # ボット所有者のユーザーID
+ERROR_REPORT_USER_IDS = list(map(int, os.getenv("ERROR_REPORT_USER_IDS", "").split(",")))  # エラー報告を送るユーザーID（複数対応）
+BOT_OWNER_IDS = list(map(int, os.getenv("BOT_OWNER_IDS", "").split(",")))  # ボット所有者のユーザーID（複数対応）
 
 # トークンの存在確認
 if not TOKEN:
@@ -37,12 +46,6 @@ async def report_status():
         except Exception as e:
             print(f"エラーレポート送信中のエラー: {e}")
         await asyncio.sleep(3600)  # 1時間（3600秒）待機
-
-def is_owner(user_id):
-    """
-    ボットの所有者かどうかを判定
-    """
-    return user_id in BOT_OWNER_IDS
 
 @bot.event
 async def on_member_join(member):
@@ -113,27 +116,27 @@ async def on_resumed():
     """
     print("Discordサーバーへの接続が再開されました。")
 
-@bot.command()
-async def restart(ctx):
+@bot.tree.command(name="restart", description="ボットを再起動します")
+async def restart(interaction: discord.Interaction):
     """
-    /restart コマンドでボットを再起動
+    /restart スラッシュコマンドでボットを再起動
     """
-    if ctx.author.id not in BOT_OWNER_IDS:
-        await ctx.send("このコマンドを実行する権限がありません。")
+    if interaction.user.id not in BOT_OWNER_IDS:
+        await interaction.response.send_message("このコマンドを実行する権限がありません。", ephemeral=True)
         return
 
-    await ctx.send("ボットを再起動しています...")
+    await interaction.response.send_message("ボットを再起動しています...")
     print("ボットの再起動をトリガーします。")
-    await bot.close()  # ボットを停止
-    sys.exit(0)  # プロセスを終了（Railwayの再起動をトリガー）
+    await bot.close()
+    sys.exit(0)
 
-# 非同期的にボットを実行する
 async def main():
     """
     メイン関数で非同期にボットを起動
     """
     asyncio.create_task(report_status())  # 定期タスクを作成
-    await bot.start(TOKEN)  # 非同期にボットを起動
+    async with bot:
+        await bot.start(TOKEN)
 
 if __name__ == "__main__":
     asyncio.run(main())
