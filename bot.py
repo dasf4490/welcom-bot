@@ -7,6 +7,8 @@ from discord.ext import commands
 # ボットのインテント設定（DM送信・メンバーイベントを有効化）
 intents = discord.Intents.default()
 intents.members = True
+
+# Botオブジェクトの生成
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 # 環境変数から設定値を取得
@@ -131,8 +133,12 @@ async def restart(ctx):
 # 定期タスクとしてエラーレポートを送る
 bot.loop.create_task(report_status())
 
-# ボットを起動
-try:
-    bot.run(TOKEN)
-except Exception as e:
-    print(f"ボットの起動中にエラーが発生しました: {e}")
+# 非同期的にボットを実行する
+async def main():
+    try:
+        await bot.start(TOKEN)  # 非同期起動
+    except Exception as e:
+        print(f"ボットの起動中にエラーが発生しました: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
