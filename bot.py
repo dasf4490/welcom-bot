@@ -7,7 +7,9 @@ from discord.ext import commands
 
 # インテント設定とボットの初期化
 intents = discord.Intents.default()
-intents.members = True  # 必要に応じて有効化
+intents.members = True  # Server Members Intent を有効化
+intents.presences = True  # Presence Intent を有効化
+intents.message_content = True  # Message Content Intent を有効化
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -63,7 +65,6 @@ async def on_member_join(member):
         welcome_channel = bot.get_channel(WELCOME_CHANNEL_ID)
 
         if role and welcome_channel and can_send_message:
-            # ここでメッセージ内容を変更せずそのまま使用
             await welcome_channel.send(
                 f"ようこそ {role.mention} の皆さん！\n"
                 "「お喋りを始める前に、もういくつかステップがあります。」と出ていると思うので、\n"
