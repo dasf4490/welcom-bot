@@ -2,28 +2,21 @@ import discord
 import asyncio
 import os
 import sys
-from discord import app_commands
 from discord.ext import commands
 
 # インテント設定とボットの初期化
 intents = discord.Intents.default()
 intents.members = True
 
-class MyBot(commands.Bot):
-    async def setup_hook(self):
-        # スラッシュコマンドの同期
-        await self.tree.sync()
-        print("スラッシュコマンドが同期されました！")
-
 # Botインスタンスを作成
-bot = MyBot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)  # プレフィックスを「!」に設定
 
 # 環境変数から設定値を取得
 TOKEN = os.getenv("DISCORD_TOKEN")  # Botトークン
 ROLE_ID = int(os.getenv("DISCORD_ROLE_ID"))  # ロールID
 WELCOME_CHANNEL_ID = int(os.getenv("DISCORD_WELCOME_CHANNEL_ID"))  # チャンネルID
-ERROR_REPORT_USER_IDS = list(map(int, os.getenv("ERROR_REPORT_USER_IDS", "").split(",")))  # エラー報告を送るユーザーID（複数対応）
-BOT_OWNER_IDS = list(map(int, os.getenv("BOT_OWNER_IDS", "").split(",")))  # ボット所有者のユーザーID（複数対応）
+ERROR_REPORT_USER_IDS = list(map(int, os.getenv("ERROR_REPORT_USER_IDS", "").split(",")))  # エラー報告を送るユーザーID
+BOT_OWNER_IDS = list(map(int, os.getenv("BOT_OWNER_IDS", "").split(",")))  # ボット所有者のユーザーID
 
 # トークンの存在確認
 if not TOKEN:
@@ -116,16 +109,16 @@ async def on_resumed():
     """
     print("Discordサーバーへの接続が再開されました。")
 
-@bot.tree.command(name="restart", description="ボットを再起動します")
-async def restart(interaction: discord.Interaction):
+@bot.command(name="restart")
+async def restart(ctx):
     """
-    /restart スラッシュコマンドでボットを再起動
+    !restart コマンドでボットを再起動
     """
-    if interaction.user.id not in BOT_OWNER_IDS:
-        await interaction.response.send_message("このコマンドを実行する権限がありません。", ephemeral=True)
+    if ctx.author.id not in BOT_OWNER_IDS:
+        await ctx.send("このコマンドを実行する権限がありません。")
         return
 
-    await interaction.response.send_message("ボットを再起動しています...")
+    await ctx.send("ボットを再起動しています...")
     print("ボットの再起動をトリガーします。")
     await bot.close()
     sys.exit(0)
